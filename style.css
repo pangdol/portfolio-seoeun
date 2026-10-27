@@ -12,40 +12,35 @@
   --placeholder: #e2e5d8; /* 사진이 없을 때 자리 */
   --danger: #b4533a;      /* 지우기·오류 (흙빛 빨강) */
   --shadow: rgba(52, 73, 59, 0.08);
-  --serif: "Noto Serif KR", "Nanum Myeongjo", "AppleMyungjo", "Batang", serif;
+  --font: "Pretendard Variable", "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
 }
 
 * {
   box-sizing: border-box;
 }
 
-/* 바탕: 맨 위에 해와 겹겹의 산, 그 아래는 모래빛 */
-body {
-  margin: 0;
-  background-color: var(--bg);
-  background-image:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 520' preserveAspectRatio='xMidYMax slice'%3E %3Cdefs%3E %3ClinearGradient id='f' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%238fa892'/%3E%3Cstop offset='1' stop-color='%23f4f0e6'/%3E%3C/linearGradient%3E %3ClinearGradient id='m' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23b5c7b2'/%3E%3Cstop offset='1' stop-color='%23e9ebdf'/%3E%3C/linearGradient%3E %3C/defs%3E %3Ccircle cx='1090' cy='150' r='64' fill='%23f6dfba' opacity='0.85'/%3E %3Ccircle cx='1090' cy='150' r='110' fill='%23f6dfba' opacity='0.25'/%3E %3Cpath d='M0 300 L140 210 L250 260 L400 150 L540 250 L660 190 L790 270 L930 170 L1080 255 L1210 200 L1330 250 L1440 215 L1440 520 L0 520 Z' fill='%23d6e0d1'/%3E %3Cpath d='M0 360 L120 300 L230 340 L370 250 L520 340 L640 300 L770 360 L900 280 L1040 350 L1180 290 L1300 340 L1440 300 L1440 520 L0 520 Z' fill='url(%23m)'/%3E %3Cpath d='M0 420 C160 370 300 400 430 380 C580 355 700 410 860 390 C1010 370 1160 400 1290 380 C1360 370 1410 380 1440 385 L1440 520 L0 520 Z' fill='url(%23f)' opacity='0.9'/%3E %3Cg fill='%237f9a84' opacity='0.75'%3E %3Cpath d='M180 392 l14 -40 l14 40 z'/%3E%3Cpath d='M204 396 l10 -30 l10 30 z'/%3E %3Cpath d='M1220 388 l14 -42 l14 42 z'/%3E%3Cpath d='M1246 392 l10 -30 l10 30 z'/%3E%3Cpath d='M1196 394 l9 -26 l9 26 z'/%3E %3C/g%3E %3C/svg%3E"),
-    linear-gradient(180deg, #e6ede3 0, #f1eee2 380px, var(--bg) 560px);
-  background-repeat: no-repeat;
-  background-position: center top, 0 0;
-  background-size: max(100%, 1100px) auto, 100% 100%;
-  min-height: 100vh;
-  color: var(--text);
-  font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
-  line-height: 1.6;
-}
-
-/* 맨 아래 낮은 산 능선 */
+/* 바탕: 숲 사진을 화면에 고정해서 깔고, 그 위에 카드가 떠 있다 */
 html {
   background: var(--bg);
 }
 
-body::after {
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--text);
+  font-family: var(--font); /* 글꼴: 프리텐다드 (fonts/pretendard 폴더) */
+  line-height: 1.6;
+}
+
+/* 사진은 스크롤해도 움직이지 않는다 (휴대폰에서도 같게 보이도록 따로 고정한 층) */
+body::before {
   content: "";
-  display: block;
-  height: 200px;
-  margin-top: -80px;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 220' preserveAspectRatio='xMidYMax slice'%3E %3Cpath d='M0 120 L160 60 L300 110 L460 40 L620 115 L780 70 L940 125 L1100 55 L1260 110 L1440 70 L1440 220 L0 220 Z' fill='%23dfe5d8'/%3E %3Cpath d='M0 170 C200 130 380 160 560 145 C760 128 940 170 1140 150 C1280 138 1380 150 1440 155 L1440 220 L0 220 Z' fill='%23b9c9b5'/%3E %3Cg fill='%2393ab95'%3E%3Cpath d='M260 152 l12 -34 l12 34 z'/%3E%3Cpath d='M282 154 l8 -24 l8 24 z'/%3E%3Cpath d='M1150 150 l12 -36 l12 36 z'/%3E%3Cpath d='M1172 152 l8 -24 l8 24 z'/%3E%3C/g%3E %3C/svg%3E") center bottom / max(100%, 1100px) auto no-repeat;
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(180deg, rgba(244, 240, 230, 0.05) 0%, rgba(40, 60, 45, 0.25) 100%),
+    url("images/forest.webp") center 35% / cover no-repeat;
   pointer-events: none;
 }
 
@@ -57,7 +52,7 @@ input {
 .page {
   max-width: 1240px;
   margin: 0 auto;
-  padding: 200px 24px 48px;
+  padding: 140px 24px 48px;
 }
 
 /* ===== 큰 흰 카드 ===== */
@@ -109,9 +104,8 @@ input {
 
 .name {
   margin: 0;
-  font-family: var(--serif);
   font-size: 28px;
-  font-weight: 700;
+  font-weight: 800;
   color: var(--ink);
 }
 
@@ -194,9 +188,8 @@ input {
   position: relative;
   margin: 0 0 28px;
   padding-left: 20px;
-  font-family: var(--serif);
   font-size: 34px;
-  font-weight: 700;
+  font-weight: 800;
   letter-spacing: 0.04em;
   line-height: 1.15;
   color: var(--ink);
@@ -450,7 +443,6 @@ input {
   margin: 0;
   padding: 8px 0 0;
   text-align: center;
-  font-family: var(--serif);
   font-style: italic;
   font-size: 18px;
   color: var(--muted);
@@ -553,6 +545,10 @@ input {
 }
 
 .admin-link {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: rgba(255, 253, 248, 0.75);
   font-size: 12px;
   color: var(--muted);
   text-decoration: none;
@@ -572,7 +568,7 @@ input {
 /* 휴대폰: 모두 한 줄로 쌓기 */
 @media (max-width: 820px) {
   .page {
-    padding: 120px 16px 16px;
+    padding: 96px 16px 16px;
   }
 
   .sheet:not(.guestbook) {
