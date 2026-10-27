@@ -121,6 +121,24 @@
       </ul>
     </section>
 
+    <!-- 프로젝트 자세히 보기 창 (카드를 누르면 열린다) -->
+    <dialog class="project-dialog" id="project-dialog" aria-labelledby="dlg-title">
+      <button type="button" class="dlg-close" id="dlg-close" aria-label="닫기">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+      <div class="dlg-photo" id="dlg-photo"></div>
+      <div class="dlg-body">
+        <p class="card-meta" id="dlg-meta"></p>
+        <h2 class="dlg-title" id="dlg-title"></h2>
+        <div class="card-tags" id="dlg-tags"></div>
+        <p class="dlg-desc" id="dlg-desc"></p>
+        <div class="dlg-actions">
+          <button type="button" class="dlg-file" id="dlg-file">첨부 파일 열기</button>
+          <button type="button" class="dlg-done" id="dlg-done">닫기</button>
+        </div>
+      </div>
+    </dialog>
+
     <footer class="footer">
       <a href="admin.html" class="admin-link">관리자</a>
     </footer>

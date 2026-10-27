@@ -211,17 +211,13 @@ function popLeaves(button) {
 function makeCard(project, likeCount) {
   const card = el("article", "card");
 
-  // 카드 본문 (누르면 파일이나 썸네일을 새 탭으로)
+  // 카드 본문 (누르면 자세히 보기 창이 열린다)
   const open = el("button", "card-open");
   open.type = "button";
-  const link = project.file_url || project.thumbnail_url;
-  if (link) {
-    open.addEventListener("click", function () {
-      window.open(link, "_blank", "noopener");
-    });
-  } else {
-    open.disabled = true;
-  }
+  open.setAttribute("aria-haspopup", "dialog");
+  open.addEventListener("click", function () {
+    openProjectDialog(project);
+  });
 
   const browser = el("div", "browser");
   const bar = el("div", "browser-bar");
@@ -311,6 +307,72 @@ async function loadProjects() {
   });
   reveal(box.querySelectorAll(".card"));
 }
+
+// ===== 프로젝트 자세히 보기 창 =====
+const dialog = $("project-dialog");
+let dialogFileUrl = null;
+
+function isImageUrl(url) {
+  return /\.(png|jpe?g|webp|gif)(\?|$)/i.test(url || "");
+}
+
+function openProjectDialog(project) {
+  // 사진: 썸네일, 없으면 첨부 파일이 이미지일 때 그 이미지
+  const photoUrl = project.thumbnail_url || (isImageUrl(project.file_url) ? project.file_url : null);
+  const photo = $("dlg-photo");
+  photo.innerHTML = "";
+  photo.classList.toggle("empty", !photoUrl);
+  if (photoUrl) {
+    const img = el("img");
+    img.src = photoUrl;
+    img.alt = project.title;
+    img.onerror = function () { img.remove(); photo.classList.add("empty"); };
+    photo.appendChild(img);
+  }
+
+  $("dlg-meta").textContent = [project.number, project.category].filter(Boolean).join(" · ");
+  $("dlg-title").textContent = project.title;
+  $("dlg-desc").textContent = project.description;
+
+  const tags = $("dlg-tags");
+  tags.innerHTML = "";
+  (project.tags || []).forEach(function (t) {
+    tags.appendChild(el("span", null, t));
+  });
+
+  // 첨부 파일이 있으면 "첨부 파일 열기" 버튼 (PDF면 "PDF 열기")
+  dialogFileUrl = project.file_url || null;
+  const fileBtn = $("dlg-file");
+  fileBtn.hidden = !dialogFileUrl;
+  fileBtn.textContent = /\.pdf(\?|$)/i.test(dialogFileUrl || "") ? "PDF 열기" : "첨부 파일 크게 보기";
+
+  if (typeof dialog.showModal === "function") {
+    dialog.showModal();
+    document.documentElement.classList.add("dialog-open");
+  } else if (dialogFileUrl || photoUrl) {
+    // 아주 오래된 브라우저: 예전처럼 새 탭으로
+    window.open(dialogFileUrl || photoUrl, "_blank", "noopener");
+  }
+}
+
+function closeProjectDialog() {
+  if (dialog.open) dialog.close();
+}
+
+dialog.addEventListener("close", function () {
+  document.documentElement.classList.remove("dialog-open");
+});
+
+// 창 바깥(어두운 부분)을 누르면 닫힌다
+dialog.addEventListener("click", function (e) {
+  if (e.target === dialog) closeProjectDialog();
+});
+
+$("dlg-close").addEventListener("click", closeProjectDialog);
+$("dlg-done").addEventListener("click", closeProjectDialog);
+$("dlg-file").addEventListener("click", function () {
+  if (dialogFileUrl) window.open(dialogFileUrl, "_blank", "noopener");
+});
 
 // ===== 방명록 =====
 function formatDate(iso) {

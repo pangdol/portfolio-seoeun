@@ -345,8 +345,10 @@ input {
   cursor: pointer;
 }
 
-.card-open:disabled {
-  cursor: default;
+.card-open:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: -3px;
+  border-radius: 20px;
 }
 
 /* 브라우저 창 모양 썸네일 */
@@ -518,6 +520,165 @@ input {
 
 .quote:not(:empty)::before { content: "“ "; color: var(--accent); font-weight: 700; }
 .quote:not(:empty)::after  { content: " ”"; color: var(--accent); font-weight: 700; }
+
+/* ===== 프로젝트 자세히 보기 창 ===== */
+.dialog-open {
+  overflow: hidden; /* 창이 열려 있는 동안 뒤 화면은 스크롤되지 않게 */
+}
+
+.project-dialog {
+  width: min(760px, calc(100% - 32px));
+  max-height: calc(100% - 48px);
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  border-radius: 28px;
+  background: rgba(255, 253, 248, 0.9);
+  color: var(--text);
+  box-shadow: 0 30px 80px rgba(20, 32, 25, 0.35);
+  -webkit-backdrop-filter: blur(22px) saturate(1.25);
+  backdrop-filter: blur(22px) saturate(1.25);
+  overflow: auto;
+}
+
+.project-dialog::backdrop {
+  background: rgba(24, 36, 28, 0.45);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+
+.dlg-close {
+  position: sticky;
+  top: 14px;
+  float: right;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  margin: 14px 14px -54px 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 253, 248, 0.9);
+  color: var(--ink);
+  box-shadow: 0 4px 14px var(--shadow);
+  cursor: pointer;
+}
+
+.dlg-close svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+}
+
+.dlg-photo {
+  background: var(--placeholder);
+}
+
+.dlg-photo img {
+  display: block;
+  width: 100%;
+  max-height: 60vh;
+  object-fit: contain;
+  background: #e9ece2;
+}
+
+.dlg-photo.empty {
+  aspect-ratio: 16 / 7;
+  background: var(--placeholder) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 60'%3E%3Ccircle cx='72' cy='18' r='7' fill='%23f3f0e4'/%3E%3Cpath d='M0 60 L28 26 L44 42 L62 22 L100 60 Z' fill='%23cdd5c3'/%3E%3C/svg%3E") center bottom / 50% auto no-repeat;
+}
+
+.dlg-body {
+  padding: 28px 32px 32px;
+}
+
+.dlg-title {
+  margin: 0 0 12px;
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1.35;
+  color: var(--ink);
+}
+
+.dlg-desc {
+  margin: 18px 0 0;
+  color: var(--text);
+  white-space: pre-line;
+  word-break: break-word;
+}
+
+.dlg-desc:empty {
+  display: none;
+}
+
+.dlg-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 28px;
+}
+
+.dlg-actions button {
+  padding: 12px 22px;
+  border-radius: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.dlg-file {
+  border: 0;
+  background: var(--accent);
+  color: #ffffff;
+}
+
+.dlg-file[hidden] {
+  display: none;
+}
+
+.dlg-done {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+}
+
+/* 창이 열릴 때 살며시 떠오른다 */
+.motion-ok .project-dialog[open] {
+  animation: dialog-in 0.35s ease-out;
+}
+
+.motion-ok .project-dialog[open]::backdrop {
+  animation: backdrop-in 0.35s ease-out;
+}
+
+@keyframes dialog-in {
+  from { opacity: 0; transform: translateY(24px) scale(0.98); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes backdrop-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@media (max-width: 820px) {
+  .project-dialog {
+    border-radius: 22px;
+  }
+
+  .dlg-body {
+    padding: 22px 20px 24px;
+  }
+
+  .dlg-title {
+    font-size: 21px;
+  }
+
+  .dlg-actions button {
+    flex: 1;
+  }
+}
 
 /* ===== 스크롤하면 하나씩 떠오르기 (script.js 가 .reveal 을 붙인다) ===== */
 .motion-ok .reveal {
