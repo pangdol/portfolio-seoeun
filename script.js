@@ -39,7 +39,7 @@ function el(tag, className, text) {
   return node;
 }
 
-// ===== 시간 따라 바뀌는 숲 =====
+// ===== 시간 따라 바뀌는 바탕색 =====
 // 아침 5~10시, 낮 10~17시, 저녁 17~20시, 밤 20~5시.
 // 주소 뒤에 ?time=night 처럼 붙이면 그 시간대로 미리 볼 수 있다.
 function timeOfDay() {
