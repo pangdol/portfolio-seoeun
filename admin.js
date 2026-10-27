@@ -218,6 +218,46 @@ const PROFILE_FIELDS = [
   "headline", "intro", "education", "skills", "experience", "quote",
 ];
 let profilePhotoUrl = null;
+let profileResumeUrl = null;
+
+// 표에 새 칸이 아직 없을 때(400) 보여 줄 안내
+const SQL_HINT = "Supabase SQL Editor에서 resume.sql 전체(특히 9·10번)를 실행했는지 확인해 주세요.";
+function saveErrorText(e) {
+  return /400/.test(String(e && e.message)) ? SQL_HINT : errorText(e);
+}
+
+// 숫자로 보는 나: 입력칸 4줄 ↔ [{value, label}]
+function fillStats(stats) {
+  const list = Array.isArray(stats) ? stats : [];
+  for (let i = 0; i < 4; i++) {
+    $("st-value-" + i).value = (list[i] && list[i].value) || "";
+    $("st-label-" + i).value = (list[i] && list[i].label) || "";
+  }
+}
+
+function readStats() {
+  const list = [];
+  for (let i = 0; i < 4; i++) {
+    const value = $("st-value-" + i).value.trim();
+    const label = $("st-label-" + i).value.trim();
+    if (value || label) list.push({ value: value, label: label });
+  }
+  return list;
+}
+
+function renderResumeName() {
+  const box = $("resume-name");
+  box.innerHTML = "";
+  if (profileResumeUrl) {
+    const a = el("a", null, profileResumeUrl.split("/").pop());
+    a.href = profileResumeUrl;
+    a.target = "_blank";
+    a.rel = "noopener";
+    box.append("지금 파일: ", a);
+  } else {
+    box.textContent = "없음";
+  }
+}
 
 async function loadProfile() {
   try {
@@ -228,6 +268,9 @@ async function loadProfile() {
     });
     profilePhotoUrl = p.photo_url || null;
     setPreview("photo-preview", profilePhotoUrl);
+    fillStats(p.stats);
+    profileResumeUrl = p.resume_url || null;
+    renderResumeName();
   } catch (e) {
     showMsg("profile-msg", "프로필을 불러오지 못했어요. " + errorText(e), true);
   }
@@ -250,13 +293,14 @@ async function saveProfile() {
   PROFILE_FIELDS.forEach(function (f) {
     data[f] = $("pf-" + f).value.trim();
   });
+  data.stats = readStats();
   btn.disabled = true;
   showMsg("profile-msg", "저장하는 중…");
   try {
     await saveProfileData(data);
     showMsg("profile-msg", "저장했어요. 방문자 화면을 새로고침하면 보여요.");
   } catch (e) {
-    showMsg("profile-msg", "저장하지 못했어요. " + errorText(e), true);
+    showMsg("profile-msg", "저장하지 못했어요. " + saveErrorText(e), true);
   }
   btn.disabled = false;
 }
@@ -284,6 +328,46 @@ async function onPhotoPicked() {
   input.value = "";
 }
 
+// 이력서 PDF: 고르면 바로 올리고 저장한다
+async function onResumePicked() {
+  const input = $("resume-file");
+  const file = input.files[0];
+  input.value = "";
+  if (!file) return;
+  const PDF_ONLY = { "application/pdf": "pdf" };
+  if (!PDF_ONLY[file.type]) {
+    showMsg("resume-msg", "PDF 파일만 올릴 수 있어요.", true);
+    return;
+  }
+  if (file.size > MAX_SIZE) {
+    showMsg("resume-msg", "파일이 10MB보다 커요. 더 작은 파일을 골라 주세요.", true);
+    return;
+  }
+  showMsg("resume-msg", "올리는 중…");
+  try {
+    const url = await uploadFile("profile", file, PDF_ONLY);
+    await saveProfileData({ resume_url: url });
+    profileResumeUrl = url;
+    renderResumeName();
+    showMsg("resume-msg", "이력서를 올렸어요.");
+  } catch (e) {
+    showMsg("resume-msg", "올리지 못했어요. " + saveErrorText(e), true);
+  }
+}
+
+async function removeResume() {
+  if (!profileResumeUrl) return;
+  if (!confirm("이력서 PDF를 뺄까요? (방문자 화면의 '이력서 PDF 받기' 버튼이 사라져요)")) return;
+  try {
+    await saveProfileData({ resume_url: null });
+    profileResumeUrl = null;
+    renderResumeName();
+    showMsg("resume-msg", "이력서를 뺐어요.");
+  } catch (e) {
+    showMsg("resume-msg", "빼지 못했어요. " + saveErrorText(e), true);
+  }
+}
+
 async function removePhoto() {
   if (!profilePhotoUrl) return;
   if (!confirm("프로필 사진을 뺄까요? (방문자 화면에는 회색 자리가 보여요)")) return;
@@ -300,6 +384,8 @@ async function removePhoto() {
 // ===== 포트폴리오 카드 =====
 let projects = [];
 let likeCounts = {};
+// 케이스 스터디 칸 (자세히 보기 창에 나온다)
+const CASE_FIELDS = ["period", "my_role", "contribution", "key_result", "problem", "solution", "outcome"];
 let editing = null; // 고치는 중인 카드 (새 카드면 { id: null })
 
 async function loadProjects() {
@@ -310,7 +396,6 @@ async function loadProjects() {
     }));
     likeCounts = {};
     projects.forEach(function (p, i) { likeCounts[p.id] = counts[i]; });
-    showMsg("project-list-msg", "");
   } catch (e) {
     showMsg("project-list-msg", "카드를 불러오지 못했어요. " + errorText(e), true);
   }
@@ -422,6 +507,9 @@ function openProjectForm(p) {
   $("pj-title").value = p ? p.title : "";
   $("pj-description").value = p ? p.description : "";
   $("pj-tags").value = p ? (p.tags || []).join(", ") : "";
+  CASE_FIELDS.forEach(function (f) {
+    $("pj-" + f).value = (p && p[f]) || "";
+  });
   $("pj-thumb-file").value = "";
   $("pj-file-file").value = "";
   $("pj-detail-file").value = "";
@@ -565,6 +653,9 @@ async function saveProject() {
     file_url: editing.file_url,
     detail_images: editing.detail_images,
   };
+  CASE_FIELDS.forEach(function (f) {
+    data[f] = $("pj-" + f).value.trim();
+  });
 
   const btn = $("project-save");
   btn.disabled = true;
@@ -583,11 +674,7 @@ async function saveProject() {
     showMsg("project-list-msg", "카드를 저장했어요.");
     await loadProjects();
   } catch (e) {
-    // 400 = 표에 detail_images 칸이 아직 없을 때
-    const hint = /400/.test(String(e && e.message))
-      ? "Supabase SQL Editor에서 resume.sql의 9번(자세히 보기 사진 칸)을 실행했는지 확인해 주세요."
-      : errorText(e);
-    showMsg("project-msg", "저장하지 못했어요. " + hint, true);
+    showMsg("project-msg", "저장하지 못했어요. " + saveErrorText(e), true);
   }
   btn.disabled = false;
 }
@@ -733,6 +820,8 @@ $("denied-logout").addEventListener("click", signOut);
 $("profile-save").addEventListener("click", saveProfile);
 $("photo-file").addEventListener("change", onPhotoPicked);
 $("photo-remove").addEventListener("click", removePhoto);
+$("resume-file").addEventListener("change", onResumePicked);
+$("resume-remove").addEventListener("click", removeResume);
 
 $("project-new").addEventListener("click", function () { openProjectForm(null); });
 $("project-cancel").addEventListener("click", closeProjectForm);

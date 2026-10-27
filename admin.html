@@ -196,6 +196,32 @@
       display: block;
     }
 
+    /* 숫자로 보는 나: 숫자 · 설명 두 칸씩 */
+    .stat-rows {
+      display: grid;
+      grid-template-columns: 160px 1fr;
+      gap: 8px 10px;
+    }
+
+    .stat-rows input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--surface);
+      color: var(--text);
+      font: inherit;
+    }
+
+    .case-guide {
+      margin: 12px 0 14px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
     /* 자세히 보기 사진 목록 */
     .detail-list {
       display: flex;
@@ -438,6 +464,32 @@
           <label class="field"><span>SKILLS &amp; TOOLS</span><textarea id="pf-skills"></textarea></label>
           <label class="field wide"><span>EXPERIENCE</span><textarea id="pf-experience"></textarea></label>
           <label class="field wide"><span>맨 아래 한 줄 인용</span><input type="text" id="pf-quote"></label>
+
+          <div class="field wide">
+            <span>숫자로 보는 나 (소개 글 아래에 크게 보여요, 4개까지)</span>
+            <div class="stat-rows">
+              <input type="text" id="st-value-0" placeholder="숫자 예: 10년" aria-label="숫자 1">
+              <input type="text" id="st-label-0" placeholder="설명 예: 기획·PM 경력" aria-label="설명 1">
+              <input type="text" id="st-value-1" placeholder="예: 40+" aria-label="숫자 2">
+              <input type="text" id="st-label-1" placeholder="예: 참여 프로젝트" aria-label="설명 2">
+              <input type="text" id="st-value-2" placeholder="예: 25" aria-label="숫자 3">
+              <input type="text" id="st-label-2" placeholder="예: 함께한 고객사" aria-label="설명 3">
+              <input type="text" id="st-value-3" placeholder="예: 98%" aria-label="숫자 4">
+              <input type="text" id="st-label-3" placeholder="예: 고객 만족도" aria-label="설명 4">
+            </div>
+            <small>숫자로 시작하면(예: 40+, 98%) 방문자 화면에서 0부터 올라가요. 비워 둔 줄은 보이지 않아요.</small>
+          </div>
+        </div>
+
+        <div class="field">
+          <span>이력서 PDF (왼쪽 프로필 아래 "이력서 PDF 받기" 버튼)</span>
+          <input type="file" id="resume-file" accept="application/pdf">
+          <div class="buttons">
+            <button type="button" class="btn small danger" id="resume-remove">이력서 빼기</button>
+          </div>
+          <small class="file-name" id="resume-name">없음</small>
+          <small class="file-name">PDF, 10MB까지. 고르면 바로 올라가고 저장돼요.</small>
+          <p class="msg" id="resume-msg"></p>
         </div>
 
         <button type="button" class="btn primary" id="profile-save">프로필 저장</button>
@@ -459,11 +511,21 @@
             <label class="field"><span>번호</span><input type="text" id="pj-number" placeholder="예: 01"></label>
             <label class="field"><span>분류</span><input type="text" id="pj-category"></label>
             <label class="field wide"><span>제목 (꼭 적기)</span><input type="text" id="pj-title"></label>
-            <label class="field wide"><span>설명</span><textarea id="pj-description"></textarea></label>
+            <label class="field wide"><span>설명 (카드에는 두 줄까지 보여요)</span><textarea id="pj-description"></textarea></label>
+
             <label class="field wide">
               <span>태그</span><input type="text" id="pj-tags" placeholder="예: 총괄 PM, UI/UX">
               <small>쉼표(,)로 나눠 적어요.</small>
             </label>
+
+            <p class="field wide case-guide">케이스 스터디 — 자세히 보기 창에 나와요. 비워 둔 칸은 보이지 않아요.</p>
+            <label class="field"><span>기간</span><input type="text" id="pj-period" placeholder="예: 2024.03 – 2024.09"></label>
+            <label class="field"><span>내 역할</span><input type="text" id="pj-my_role" placeholder="예: UI/UX 리드 기획"></label>
+            <label class="field"><span>기여도</span><input type="text" id="pj-contribution" placeholder="예: 기획 80%"></label>
+            <label class="field"><span>대표 성과 한 줄</span><input type="text" id="pj-key_result" placeholder="예: 문의 처리 시간 40% 단축"></label>
+            <label class="field wide"><span>01 문제 — 어떤 문제가 있었나요?</span><textarea id="pj-problem"></textarea></label>
+            <label class="field wide"><span>02 해결 — 어떻게 풀었나요?</span><textarea id="pj-solution"></textarea></label>
+            <label class="field wide"><span>03 결과 — 무엇이 달라졌나요?</span><textarea id="pj-outcome"></textarea></label>
 
             <div class="field wide">
               <span>썸네일 이미지</span>

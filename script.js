@@ -171,7 +171,61 @@ async function loadProfile() {
   $("profile-experience").textContent = p.experience;
   $("profile-quote").textContent = p.quote;
 
+  renderStats(p.stats);
+
+  // 이력서 PDF 받기 버튼
+  const resumeBtn = $("resume-btn");
+  resumeBtn.hidden = !p.resume_url;
+  resumeBtn.onclick = p.resume_url
+    ? function () { window.open(p.resume_url, "_blank", "noopener"); }
+    : null;
+
   if (p.name) document.title = p.name + " | Portfolio";
+}
+
+// ===== 숫자로 보는 나 =====
+function renderStats(stats) {
+  const box = $("stats");
+  box.innerHTML = "";
+  const list = (Array.isArray(stats) ? stats : [])
+    .filter(function (s) { return s && (s.value || s.label); })
+    .slice(0, 4);
+  box.hidden = list.length === 0;
+
+  list.forEach(function (s) {
+    const item = el("div", "stat");
+    const value = el("dt", "stat-value", s.value);
+    item.append(value, el("dd", "stat-label", s.label));
+    box.appendChild(item);
+    countUpWhenVisible(value, String(s.value || ""));
+  });
+  reveal(box.querySelectorAll(".stat"));
+}
+
+// "40+" 처럼 숫자로 시작하면, 화면에 보일 때 0부터 그 숫자까지 올라간다
+function countUpWhenVisible(node, text) {
+  const m = text.match(/^(\d+(?:\.\d+)?)(.*)$/);
+  if (!m || !MOTION_OK) return;
+  const target = parseFloat(m[1]);
+  const decimals = (m[1].split(".")[1] || "").length;
+  const rest = m[2];
+
+  const observer = new IntersectionObserver(function (entries) {
+    if (!entries[0].isIntersecting) return;
+    observer.disconnect();
+    const start = performance.now();
+    const duration = 1200;
+    function tick(now) {
+      const t = Math.min(1, (now - start) / duration);
+      const eased = 1 - Math.pow(1 - t, 3); // 끝에서 천천히 멈춘다
+      node.textContent = (target * eased).toFixed(decimals) + rest;
+      if (t < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }, { threshold: 0.6 });
+
+  node.textContent = (0).toFixed(decimals) + rest;
+  observer.observe(node);
 }
 
 // ===== 포트폴리오 카드 =====
@@ -303,9 +357,39 @@ async function loadProjects() {
     return;
   }
   projects.forEach(function (p, i) {
-    box.appendChild(makeCard(p, counts[i]));
+    const card = makeCard(p, counts[i]);
+    card.dataset.category = p.category || "";
+    box.appendChild(card);
   });
   reveal(box.querySelectorAll(".card"));
+  renderFilters(projects);
+}
+
+// ===== 분류로 골라 보기 =====
+function renderFilters(projects) {
+  const box = $("filters");
+  box.innerHTML = "";
+  const categories = [];
+  projects.forEach(function (p) {
+    if (p.category && !categories.includes(p.category)) categories.push(p.category);
+  });
+  box.hidden = categories.length < 2;
+  if (box.hidden) return;
+
+  ["전체"].concat(categories).forEach(function (name, i) {
+    const b = el("button", "filter", name);
+    b.type = "button";
+    b.setAttribute("aria-pressed", i === 0 ? "true" : "false");
+    b.addEventListener("click", function () {
+      box.querySelectorAll(".filter").forEach(function (x) {
+        x.setAttribute("aria-pressed", x === b ? "true" : "false");
+      });
+      $("cards").querySelectorAll(".card").forEach(function (card) {
+        card.hidden = i !== 0 && card.dataset.category !== name;
+      });
+    });
+    box.appendChild(b);
+  });
 }
 
 // ===== 프로젝트 자세히 보기 창 =====
@@ -361,6 +445,7 @@ function openProjectDialog(project) {
   $("dlg-meta").textContent = [project.number, project.category].filter(Boolean).join(" · ");
   $("dlg-title").textContent = project.title;
   $("dlg-desc").textContent = project.description;
+  renderCaseStudy(project);
 
   const tags = $("dlg-tags");
   tags.innerHTML = "";
@@ -381,6 +466,33 @@ function openProjectDialog(project) {
     // 아주 오래된 브라우저: 예전처럼 새 탭으로
     window.open(dialogFileUrl || photoUrl, "_blank", "noopener");
   }
+}
+
+// 케이스 스터디: 비어 있는 칸은 보이지 않는다
+function renderCaseStudy(project) {
+  const facts = $("dlg-facts");
+  facts.innerHTML = "";
+  [["기간", project.period], ["역할", project.my_role], ["기여도", project.contribution]]
+    .forEach(function (f) {
+      if (!f[1]) return;
+      const item = el("div", "fact");
+      item.append(el("dt", null, f[0]), el("dd", null, f[1]));
+      facts.appendChild(item);
+    });
+
+  $("dlg-key").textContent = project.key_result || "";
+
+  const box = $("dlg-case");
+  box.innerHTML = "";
+  [["01", "문제", project.problem], ["02", "해결", project.solution], ["03", "결과", project.outcome]]
+    .forEach(function (c) {
+      if (!c[2]) return;
+      const section = el("section", "case-step");
+      const head = el("h3", "case-head");
+      head.append(el("span", "case-num", c[0]), c[1]);
+      section.append(head, el("p", "case-text", c[2]));
+      box.appendChild(section);
+    });
 }
 
 function closeProjectDialog() {

@@ -61,6 +61,12 @@
             </div>
           </li>
         </ul>
+
+        <!-- 이력서 PDF 받기 (관리자가 올렸을 때만 보인다) -->
+        <button type="button" class="resume-btn" id="resume-btn" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>
+          이력서 PDF 받기
+        </button>
       </aside>
 
       <!-- 오른쪽: PORTFOLIO -->
@@ -69,6 +75,9 @@
 
         <p class="headline" id="profile-headline"></p>
         <p class="intro" id="profile-intro"></p>
+
+        <!-- 숫자로 보는 나 -->
+        <dl class="stats" id="stats" hidden></dl>
 
         <div class="info-grid">
           <div class="info-box">
@@ -96,6 +105,8 @@
 
         <div class="highlights">
           <h3 class="highlights-title">PORTFOLIO HIGHLIGHTS</h3>
+          <!-- 분류로 골라 보기 (분류가 2개 이상일 때 보인다) -->
+          <div class="filters" id="filters" role="group" aria-label="분류로 골라 보기" hidden></div>
           <div class="cards" id="cards">
             <p class="status">불러오는 중…</p>
           </div>
@@ -140,7 +151,12 @@
         <p class="card-meta" id="dlg-meta"></p>
         <h2 class="dlg-title" id="dlg-title"></h2>
         <div class="card-tags" id="dlg-tags"></div>
+
+        <!-- 케이스 스터디: 기간 · 역할 · 기여도, 대표 성과, 문제 → 해결 → 결과 -->
+        <dl class="dlg-facts" id="dlg-facts"></dl>
+        <p class="dlg-key" id="dlg-key"></p>
         <p class="dlg-desc" id="dlg-desc"></p>
+        <div class="dlg-case" id="dlg-case"></div>
         <div class="dlg-actions">
           <button type="button" class="dlg-file" id="dlg-file">첨부 파일 열기</button>
           <button type="button" class="dlg-done" id="dlg-done">닫기</button>

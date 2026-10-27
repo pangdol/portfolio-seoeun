@@ -281,3 +281,65 @@ on conflict (user_id) do nothing;
 -- ---------------------------------------------------------------------
 alter table public.projects
   add column if not exists detail_images text[] not null default '{}';
+
+
+-- ---------------------------------------------------------------------
+-- 10. 케이스 스터디 · 숫자로 보는 나 · 이력서 PDF
+--     칸이 이미 있으면 건드리지 않는다. 표 권한·규칙은 위에서 정한 그대로 적용된다.
+-- ---------------------------------------------------------------------
+
+-- 프로젝트 케이스 스터디 (자세히 보기 창에 나온다)
+alter table public.projects add column if not exists period       text not null default ''; -- 기간
+alter table public.projects add column if not exists my_role      text not null default ''; -- 내 역할
+alter table public.projects add column if not exists contribution text not null default ''; -- 기여도
+alter table public.projects add column if not exists key_result   text not null default ''; -- 대표 성과 한 줄
+alter table public.projects add column if not exists problem      text not null default ''; -- 문제
+alter table public.projects add column if not exists solution     text not null default ''; -- 해결
+alter table public.projects add column if not exists outcome      text not null default ''; -- 결과
+
+-- 숫자로 보는 나: [{"value": "10년", "label": "경력"}, ...] 최대 4개
+alter table public.profile add column if not exists stats      jsonb not null default '[]'::jsonb;
+-- 이력서 PDF 주소
+alter table public.profile add column if not exists resume_url text;
+
+-- 예시 데이터 (전부 가짜). 비어 있을 때만 채운다.
+update public.profile
+set stats = '[
+  {"value": "10년", "label": "기획·PM 경력"},
+  {"value": "40+",  "label": "참여 프로젝트"},
+  {"value": "25",   "label": "함께한 고객사"},
+  {"value": "98%",  "label": "고객 만족도"}
+]'::jsonb
+where id = 1 and stats = '[]'::jsonb;
+
+update public.projects p
+set period       = v.period,
+    my_role      = v.my_role,
+    contribution = v.contribution,
+    key_result   = v.key_result,
+    problem      = v.problem,
+    solution     = v.solution,
+    outcome      = v.outcome
+from (values
+  ('예시 AI 챗봇 프로젝트', '2024.03 – 2024.09 (예시)', 'UI/UX 리드 기획', '기획 80%',
+   '문의 처리 시간 40% 단축 (예시)',
+   '상담원에게 같은 질문이 반복해서 몰려 답변이 늦어지고, 고객 만족도가 떨어지고 있었습니다. (예시)',
+   '자주 묻는 질문 300개를 분류해 대화 흐름을 설계하고, 챗봇이 답하기 어려운 질문은 상담원에게 자연스럽게 넘기는 화면을 기획했습니다. (예시)',
+   '단순 문의의 60%를 챗봇이 처리해 상담원 업무가 줄었고, 평균 처리 시간이 40% 짧아졌습니다. (예시)'),
+  ('예시 채용 플랫폼', '2023.01 – 2023.12 (예시)', '총괄 PM', 'PM 100%',
+   '지원 완료율 25% 상승 (예시)',
+   '지원서 작성 단계가 길어 중간에 그만두는 지원자가 많았습니다. (예시)',
+   '지원 흐름을 7단계에서 3단계로 줄이고, 이력서를 한 번에 불러오는 기능을 넣었습니다. (예시)',
+   '지원 완료율이 25% 올랐고, 기업 담당자의 검토 시간도 줄었습니다. (예시)'),
+  ('예시 헬스케어 앱 운영', '2022.04 – 현재 (예시)', 'UI/UX 운영 PM', '운영 70%',
+   '월 사용자 30% 증가 (예시)',
+   '기능은 많지만 사용자가 원하는 메뉴를 찾기 어렵다는 의견이 많았습니다. (예시)',
+   '사용 기록을 분석해 자주 쓰는 기능을 첫 화면으로 옮기고, 메뉴 구조를 다시 정리했습니다. (예시)',
+   '월 사용자가 30% 늘고, 고객센터 문의가 줄었습니다. (예시)'),
+  ('예시 쇼핑몰 통합 운영', '2020.01 – 2021.12 (예시)', '운영 총괄 PM', '총괄 100%',
+   '운영 비용 20% 절감 (예시)',
+   '브랜드마다 사이트와 운영 방식이 달라 같은 일을 여러 번 하고 있었습니다. (예시)',
+   '공통 화면 틀과 운영 기준서를 만들어 여러 브랜드를 한 팀이 운영할 수 있게 했습니다. (예시)',
+   '운영 인력과 비용이 20% 줄고, 새 브랜드를 여는 시간이 절반이 되었습니다. (예시)')
+) as v(title, period, my_role, contribution, key_result, problem, solution, outcome)
+where p.title = v.title and p.problem = '';
