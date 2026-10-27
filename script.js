@@ -39,6 +39,55 @@ function el(tag, className, text) {
   return node;
 }
 
+// ===== 시간 따라 바뀌는 숲 =====
+// 아침 5~10시, 낮 10~17시, 저녁 17~20시, 밤 20~5시.
+// 주소 뒤에 ?time=night 처럼 붙이면 그 시간대로 미리 볼 수 있다.
+function timeOfDay() {
+  const asked = new URLSearchParams(location.search).get("time");
+  if (["morning", "day", "evening", "night"].includes(asked)) return asked;
+  const h = new Date().getHours();
+  if (h >= 5 && h < 10) return "morning";
+  if (h >= 10 && h < 17) return "day";
+  if (h >= 17 && h < 20) return "evening";
+  return "night";
+}
+
+document.documentElement.dataset.time = timeOfDay();
+
+// ===== 스크롤하면 하나씩 떠오르기 =====
+const MOTION_OK =
+  "IntersectionObserver" in window &&
+  !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+if (MOTION_OK) document.documentElement.classList.add("motion-ok");
+
+const revealObserver = MOTION_OK
+  ? new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        const node = entry.target;
+        node.classList.add("is-visible");
+        revealObserver.unobserve(node);
+        // 다 떠오르면 표시를 떼어, 마우스를 올렸을 때의 움직임이 원래대로 빠르게
+        node.addEventListener("transitionend", function done() {
+          node.classList.remove("reveal", "is-visible");
+          node.style.transitionDelay = "";
+          node.removeEventListener("transitionend", done);
+        });
+      });
+    }, { threshold: 0.12 })
+  : null;
+
+// 같이 넘긴 것들은 0.08초씩 차례로 떠오른다
+function reveal(nodes) {
+  if (!revealObserver) return;
+  Array.prototype.forEach.call(nodes, function (node, i) {
+    node.classList.add("reveal");
+    node.style.transitionDelay = (i % 4) * 0.08 + "s";
+    revealObserver.observe(node);
+  });
+}
+
 // ===== 이 브라우저의 아이디와 좋아요 기록 =====
 function getClientId() {
   let id = null;
@@ -140,8 +189,24 @@ async function countLikes(projectId) {
   return isNaN(total) ? 0 : total;
 }
 
-const HEART_SVG =
-  '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-9-9a5 5 0 0 1 9-3 5 5 0 0 1 9 3c-2 4.6-9 9-9 9z"/></svg>';
+// 잎사귀 모양 좋아요 아이콘
+const LEAF_PATH = "M5 19c0-8 5-14 15-15-1 10-7 15-15 15zM5 19l8-8";
+const LEAF_SVG =
+  '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="' + LEAF_PATH + '"/></svg>';
+
+// 누르면 작은 잎 몇 장이 톡 튀어 오른다
+function popLeaves(button) {
+  if (!MOTION_OK) return;
+  for (let i = 0; i < 5; i++) {
+    const leaf = el("span", "leaf-pop");
+    leaf.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19c0-8 5-14 15-15-1 10-7 15-15 15z"/></svg>';
+    leaf.style.setProperty("--x", (i - 2) * 12 + "px");
+    leaf.style.setProperty("--r", (i - 2) * 35 + "deg");
+    leaf.style.animationDelay = i * 0.04 + "s";
+    button.appendChild(leaf);
+    leaf.addEventListener("animationend", function () { leaf.remove(); });
+  }
+}
 
 function makeCard(project, likeCount) {
   const card = el("article", "card");
@@ -188,7 +253,7 @@ function makeCard(project, likeCount) {
   // 좋아요 버튼
   const like = el("button", "like");
   like.type = "button";
-  like.innerHTML = HEART_SVG;
+  like.innerHTML = LEAF_SVG;
   const num = el("span", null, String(likeCount));
   like.appendChild(num);
   like.setAttribute("aria-label", "좋아요");
@@ -206,6 +271,7 @@ function makeCard(project, likeCount) {
       num.textContent = String(count);
       like.classList.add("liked");
       saveLikedId(project.id);
+      popLeaves(like);
     } else if (res && res.status === 409) {
       // 이미 이 브라우저에서 눌렀던 카드
       like.classList.add("liked");
@@ -243,6 +309,7 @@ async function loadProjects() {
   projects.forEach(function (p, i) {
     box.appendChild(makeCard(p, counts[i]));
   });
+  reveal(box.querySelectorAll(".card"));
 }
 
 // ===== 방명록 =====
@@ -320,6 +387,8 @@ $("guest-message").addEventListener("keydown", function (e) {
 });
 
 // ===== 시작 =====
+reveal(document.querySelectorAll(".info-box"));
+reveal(document.querySelectorAll(".highlights, .quote, .guestbook"));
 loadProfile();
 loadProjects();
 loadGuestbook();

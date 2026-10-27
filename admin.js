@@ -344,7 +344,7 @@ function renderProjects() {
     info.appendChild(el("span", "sub", (p.tags || []).join(", ")));
 
     const actions = el("div", "actions");
-    actions.appendChild(el("span", "like-count", "♥ " + (likeCounts[p.id] || 0)));
+    actions.appendChild(el("span", "like-count", "🌿 " + (likeCounts[p.id] || 0)));
     const up = button("▲ 올리기", "", function () { moveProject(i, -1); });
     const down = button("▼ 내리기", "", function () { moveProject(i, 1); });
     up.disabled = i === 0;
@@ -517,7 +517,7 @@ function renderLikes() {
     const actions = el("div", "actions");
     const reset = button("좋아요 초기화", "danger", function () { resetLikes(p); });
     reset.disabled = !likeCounts[p.id];
-    actions.append(el("span", "like-count", "♥ " + (likeCounts[p.id] || 0)), reset);
+    actions.append(el("span", "like-count", "🌿 " + (likeCounts[p.id] || 0)), reset);
 
     li.append(info, actions);
     list.appendChild(li);
