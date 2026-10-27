@@ -48,7 +48,7 @@
 
     .topbar a {
       font-size: 14px;
-      color: var(--blue);
+      color: var(--accent);
       font-weight: 600;
       text-decoration: none;
     }
@@ -79,7 +79,7 @@
       padding: 11px 14px;
       border: 1px solid var(--line);
       border-radius: 12px;
-      background: #ffffff;
+      background: var(--surface);
       color: var(--text);
       font: inherit;
     }
@@ -91,7 +91,7 @@
 
     .field input:focus,
     .field textarea:focus {
-      outline: 2px solid var(--blue);
+      outline: 2px solid var(--accent);
       outline-offset: -1px;
     }
 
@@ -116,20 +116,20 @@
       padding: 10px 20px;
       border: 1px solid var(--line);
       border-radius: 12px;
-      background: #ffffff;
+      background: var(--surface);
       color: var(--text);
       font-weight: 700;
       cursor: pointer;
     }
 
     .btn.primary {
-      border-color: var(--blue);
-      background: var(--blue);
+      border-color: var(--accent);
+      background: var(--accent);
       color: #ffffff;
     }
 
     .btn.danger {
-      color: #dc2626;
+      color: var(--danger);
     }
 
     .section-head .btn {
@@ -158,11 +158,11 @@
       min-height: 1.6em;
       margin: 10px 0 0;
       font-size: 14px;
-      color: var(--blue);
+      color: var(--accent);
     }
 
     .msg.error {
-      color: #dc2626;
+      color: var(--danger);
     }
 
     /* 사진·파일 고르는 칸 */
@@ -202,7 +202,7 @@
     }
 
     .file-name a {
-      color: var(--blue);
+      color: var(--accent);
     }
 
     /* 카드 목록 */
@@ -248,7 +248,7 @@
     .rows .meta {
       font-size: 12px;
       font-weight: 700;
-      color: var(--blue);
+      color: var(--accent);
     }
 
     .rows .sub {
@@ -270,8 +270,8 @@
       gap: 4px;
       padding: 3px 10px;
       border-radius: 999px;
-      background: var(--blue-soft);
-      color: var(--blue);
+      background: var(--accent-soft);
+      color: var(--accent);
       font-size: 13px;
       font-weight: 700;
       white-space: nowrap;
@@ -388,7 +388,7 @@
           <label class="field"><span>위치</span><input type="text" id="pf-location"></label>
           <label class="field wide">
             <span>한 줄 소개 제목</span><input type="text" id="pf-headline">
-            <small>이 안에 이름이 들어 있으면 방문자 화면에서 이름에 파란 밑줄이 생겨요.</small>
+            <small>이 안에 이름이 들어 있으면 방문자 화면에서 이름에 초록 밑줄이 생겨요.</small>
           </label>
           <label class="field wide"><span>소개 글</span><textarea id="pf-intro"></textarea></label>
           <label class="field"><span>EDUCATION</span><textarea id="pf-education"></textarea></label>
