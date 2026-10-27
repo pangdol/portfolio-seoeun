@@ -1,0 +1,325 @@
+// ===== Supabase 연결 정보 (공개 키만 사용) =====
+const SUPABASE_URL = "https://nomprpckowsogvytofrn.supabase.co";
+const SUPABASE_KEY = "sb_publishable_Z6oZ1GrVmzoIQhYj8Kb_dw_fDK3GdgL";
+
+// Supabase에 보낼 기본 머리글
+function headers(extra) {
+  return Object.assign(
+    { apikey: SUPABASE_KEY, "Content-Type": "application/json" },
+    extra
+  );
+}
+
+// 표에서 읽기 (예: "projects?select=*")
+async function readTable(path) {
+  const res = await fetch(SUPABASE_URL + "/rest/v1/" + path, { headers: headers() });
+  if (!res.ok) throw new Error("읽기 실패: " + res.status);
+  return res.json();
+}
+
+// 표에 한 줄 넣기
+async function insertRow(table, row, returnRow) {
+  const res = await fetch(SUPABASE_URL + "/rest/v1/" + table, {
+    method: "POST",
+    headers: headers({ Prefer: returnRow ? "return=representation" : "return=minimal" }),
+    body: JSON.stringify(row),
+  });
+  return res;
+}
+
+// 짧게 쓰려고 만든 도우미
+function $(id) {
+  return document.getElementById(id);
+}
+
+function el(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined && text !== null) node.textContent = text;
+  return node;
+}
+
+// ===== 이 브라우저의 아이디와 좋아요 기록 =====
+function getClientId() {
+  let id = null;
+  try {
+    id = localStorage.getItem("resume_client_id");
+  } catch (e) {}
+  if (!id) {
+    id = window.crypto && crypto.randomUUID
+      ? crypto.randomUUID()
+      : "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 12);
+    try {
+      localStorage.setItem("resume_client_id", id);
+    } catch (e) {}
+  }
+  return id;
+}
+
+function getLikedIds() {
+  try {
+    return JSON.parse(localStorage.getItem("resume_liked") || "[]");
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveLikedId(projectId) {
+  const list = getLikedIds();
+  if (!list.includes(projectId)) list.push(projectId);
+  try {
+    localStorage.setItem("resume_liked", JSON.stringify(list));
+  } catch (e) {}
+}
+
+const CLIENT_ID = getClientId();
+
+// ===== 프로필 =====
+async function loadProfile() {
+  let p;
+  try {
+    const rows = await readTable("profile?id=eq.1&select=*");
+    p = rows[0];
+  } catch (e) {
+    $("profile-headline").textContent = "프로필을 불러오지 못했어요.";
+    return;
+  }
+  if (!p) return;
+
+  // 사진 (없으면 회색 자리 그대로)
+  if (p.photo_url) {
+    const img = el("img");
+    img.src = p.photo_url;
+    img.alt = p.name + " 프로필 사진";
+    img.onerror = function () { img.remove(); };
+    $("profile-photo").appendChild(img);
+  }
+
+  $("profile-name").textContent = p.name;
+  $("profile-title").textContent = p.title;
+  $("profile-badge").textContent = p.career_badge;
+
+  $("contact-name").textContent = p.name;
+  $("contact-email").textContent = p.email;
+  $("contact-phone").textContent = p.phone;
+  $("contact-location").textContent = p.location;
+
+  // 한 줄 소개: 이름 부분에만 파란 밑줄
+  const headline = $("profile-headline");
+  headline.textContent = "";
+  const at = p.name ? p.headline.indexOf(p.name) : -1;
+  if (at === -1) {
+    headline.textContent = p.headline;
+  } else {
+    headline.append(p.headline.slice(0, at));
+    headline.appendChild(el("span", "name-mark", p.name));
+    headline.append(p.headline.slice(at + p.name.length));
+  }
+
+  $("profile-intro").textContent = p.intro;
+  $("profile-education").textContent = p.education;
+  $("profile-skills").textContent = p.skills;
+  $("profile-experience").textContent = p.experience;
+  $("profile-quote").textContent = p.quote;
+
+  if (p.name) document.title = p.name + " | Portfolio";
+}
+
+// ===== 포트폴리오 카드 =====
+
+// 카드 하나의 좋아요 수 (줄 수만 세어 옴)
+async function countLikes(projectId) {
+  const res = await fetch(
+    SUPABASE_URL + "/rest/v1/likes?select=id&project_id=eq." + projectId,
+    { method: "HEAD", headers: headers({ Prefer: "count=exact" }) }
+  );
+  if (!res.ok) return 0;
+  // 예: "0-4/5" 에서 맨 뒤 5가 전체 수
+  const range = res.headers.get("content-range") || "";
+  const total = parseInt(range.split("/")[1], 10);
+  return isNaN(total) ? 0 : total;
+}
+
+const HEART_SVG =
+  '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-9-9a5 5 0 0 1 9-3 5 5 0 0 1 9 3c-2 4.6-9 9-9 9z"/></svg>';
+
+function makeCard(project, likeCount) {
+  const card = el("article", "card");
+
+  // 카드 본문 (누르면 파일이나 썸네일을 새 탭으로)
+  const open = el("button", "card-open");
+  open.type = "button";
+  const link = project.file_url || project.thumbnail_url;
+  if (link) {
+    open.addEventListener("click", function () {
+      window.open(link, "_blank", "noopener");
+    });
+  } else {
+    open.disabled = true;
+  }
+
+  const browser = el("div", "browser");
+  const bar = el("div", "browser-bar");
+  bar.append(el("span"), el("span"), el("span"));
+  const screen = el("div", "browser-screen");
+  if (project.thumbnail_url) {
+    const img = el("img");
+    img.src = project.thumbnail_url;
+    img.alt = project.title;
+    img.loading = "lazy";
+    img.onerror = function () { img.remove(); };
+    screen.appendChild(img);
+  }
+  browser.append(bar, screen);
+
+  const body = el("div", "card-body");
+  const meta = [project.number, project.category].filter(Boolean).join(" · ");
+  body.appendChild(el("p", "card-meta", meta));
+  body.appendChild(el("h4", "card-title", project.title));
+  body.appendChild(el("p", "card-desc", project.description));
+  const tags = el("div", "card-tags");
+  (project.tags || []).forEach(function (t) {
+    tags.appendChild(el("span", null, t));
+  });
+  body.appendChild(tags);
+
+  open.append(browser, body);
+
+  // 좋아요 버튼
+  const like = el("button", "like");
+  like.type = "button";
+  like.innerHTML = HEART_SVG;
+  const num = el("span", null, String(likeCount));
+  like.appendChild(num);
+  like.setAttribute("aria-label", "좋아요");
+
+  let count = likeCount;
+  if (getLikedIds().includes(project.id)) like.classList.add("liked");
+
+  like.addEventListener("click", async function () {
+    if (like.classList.contains("liked") || like.disabled) return;
+    like.disabled = true;
+    const res = await insertRow("likes", { project_id: project.id, client_id: CLIENT_ID }, false)
+      .catch(function () { return null; });
+    if (res && res.ok) {
+      count += 1;
+      num.textContent = String(count);
+      like.classList.add("liked");
+      saveLikedId(project.id);
+    } else if (res && res.status === 409) {
+      // 이미 이 브라우저에서 눌렀던 카드
+      like.classList.add("liked");
+      saveLikedId(project.id);
+    } else {
+      alert("좋아요를 남기지 못했어요. 잠시 후 다시 눌러 주세요.");
+    }
+    like.disabled = false;
+  });
+
+  card.append(open, like);
+  return card;
+}
+
+async function loadProjects() {
+  const box = $("cards");
+  let projects;
+  try {
+    projects = await readTable("projects?select=*&order=sort_order.asc,id.asc");
+  } catch (e) {
+    box.innerHTML = "";
+    box.appendChild(el("p", "status", "포트폴리오를 불러오지 못했어요."));
+    return;
+  }
+
+  const counts = await Promise.all(
+    projects.map(function (p) { return countLikes(p.id).catch(function () { return 0; }); })
+  );
+
+  box.innerHTML = "";
+  if (projects.length === 0) {
+    box.appendChild(el("p", "status", "아직 등록된 포트폴리오가 없어요."));
+    return;
+  }
+  projects.forEach(function (p, i) {
+    box.appendChild(makeCard(p, counts[i]));
+  });
+}
+
+// ===== 방명록 =====
+function formatDate(iso) {
+  const d = new Date(iso);
+  return d.toLocaleString("ko-KR", {
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit",
+  });
+}
+
+function makeGuestItem(entry) {
+  const li = el("li");
+  const head = el("div", "guest-head");
+  head.append(el("span", "guest-nick", entry.nickname), el("span", "guest-date", formatDate(entry.created_at)));
+  li.append(head, el("p", "guest-msg", entry.message));
+  return li;
+}
+
+async function loadGuestbook() {
+  const list = $("guest-list");
+  let rows;
+  try {
+    rows = await readTable("resume_guestbook?select=*&order=created_at.desc&limit=100");
+  } catch (e) {
+    list.innerHTML = "";
+    list.appendChild(el("li", "status", "방명록을 불러오지 못했어요."));
+    return;
+  }
+  list.innerHTML = "";
+  if (rows.length === 0) {
+    list.appendChild(el("li", "status", "첫 번째 방명록을 남겨 주세요."));
+    return;
+  }
+  rows.forEach(function (r) {
+    list.appendChild(makeGuestItem(r));
+  });
+}
+
+async function submitGuestbook() {
+  const nickInput = $("guest-nickname");
+  const msgInput = $("guest-message");
+  const status = $("guest-status");
+  const button = $("guest-submit");
+
+  const nickname = nickInput.value.trim();
+  const message = msgInput.value.trim();
+  status.textContent = "";
+
+  if (!nickname) { status.textContent = "별명을 적어 주세요."; nickInput.focus(); return; }
+  if (!message) { status.textContent = "한마디를 적어 주세요."; msgInput.focus(); return; }
+
+  button.disabled = true;
+  const res = await insertRow("resume_guestbook", { nickname: nickname, message: message }, true)
+    .catch(function () { return null; });
+  button.disabled = false;
+
+  if (!res || !res.ok) {
+    status.textContent = "남기지 못했어요. 잠시 후 다시 해 주세요.";
+    return;
+  }
+
+  const rows = await res.json();
+  const list = $("guest-list");
+  const empty = list.querySelector(".status");
+  if (empty) empty.remove();
+  list.prepend(makeGuestItem(rows[0]));
+
+  msgInput.value = "";
+}
+
+$("guest-submit").addEventListener("click", submitGuestbook);
+$("guest-message").addEventListener("keydown", function (e) {
+  if (e.key === "Enter" && !e.isComposing) submitGuestbook();
+});
+
+// ===== 시작 =====
+loadProfile();
+loadProjects();
+loadGuestbook();
