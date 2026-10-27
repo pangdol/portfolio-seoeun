@@ -273,3 +273,11 @@ where not exists (select 1 from public.projects);
 insert into public.admins (user_id)
 select id from auth.users where email = 'admin@example.com'
 on conflict (user_id) do nothing;
+
+
+-- ---------------------------------------------------------------------
+-- 9. 자세히 보기 사진 칸 (카드를 눌렀을 때 창에 나오는 사진들, 여러 장)
+--    이미 있으면 건드리지 않는다. 표 권한·규칙은 위에서 정한 그대로 적용된다.
+-- ---------------------------------------------------------------------
+alter table public.projects
+  add column if not exists detail_images text[] not null default '{}';

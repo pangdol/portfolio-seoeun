@@ -126,7 +126,16 @@
       <button type="button" class="dlg-close" id="dlg-close" aria-label="닫기">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
       </button>
-      <div class="dlg-photo" id="dlg-photo"></div>
+      <div class="dlg-gallery">
+        <div class="dlg-photo" id="dlg-photo"></div>
+        <button type="button" class="dlg-arrow prev" id="dlg-prev" aria-label="이전 사진">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+        </button>
+        <button type="button" class="dlg-arrow next" id="dlg-next" aria-label="다음 사진">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+        </button>
+        <span class="dlg-count" id="dlg-count" aria-live="polite"></span>
+      </div>
       <div class="dlg-body">
         <p class="card-meta" id="dlg-meta"></p>
         <h2 class="dlg-title" id="dlg-title"></h2>

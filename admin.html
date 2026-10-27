@@ -196,6 +196,48 @@
       display: block;
     }
 
+    /* 자세히 보기 사진 목록 */
+    .detail-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      list-style: none;
+      margin: 0 0 10px;
+      padding: 0;
+    }
+
+    .detail-list li {
+      position: relative;
+      width: 120px;
+    }
+
+    .detail-list .preview {
+      width: 120px;
+      height: 80px;
+      border-radius: 10px;
+    }
+
+    .detail-list .num {
+      position: absolute;
+      top: 6px;
+      left: 6px;
+      padding: 0 7px;
+      border-radius: 999px;
+      background: rgba(52, 73, 59, 0.85);
+      color: #ffffff;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .detail-list .buttons {
+      margin-top: 6px;
+      gap: 4px;
+    }
+
+    .detail-list .btn.small {
+      padding: 4px 9px;
+    }
+
     .file-name {
       font-size: 13px;
       color: var(--muted);
@@ -444,7 +486,15 @@
                 <button type="button" class="btn small danger" id="pj-file-remove">첨부 파일 빼기</button>
               </div>
               <small class="file-name" id="pj-file-name">없음</small>
-              <small class="file-name">PDF·이미지, 10MB까지. 없으면 카드를 눌렀을 때 썸네일이 열려요.</small>
+              <small class="file-name">PDF·이미지, 10MB까지. 있으면 자세히 보기 창에 "PDF 열기" 버튼이 생겨요.</small>
+            </div>
+
+            <div class="field wide">
+              <span>자세히 보기 사진 (카드를 누르면 열리는 창에 나오는 사진)</span>
+              <ul class="detail-list" id="pj-detail-list"></ul>
+              <input type="file" id="pj-detail-file" accept="image/png,image/jpeg,image/webp,image/gif" multiple>
+              <small class="file-name">여러 장을 한꺼번에 골라도 돼요. 10장까지, 한 장에 10MB까지. ◀ ▶ 로 순서를 바꾸고, 맨 앞 사진이 처음 보여요.</small>
+              <small class="file-name">하나도 안 고르면 썸네일이 대신 나와요.</small>
             </div>
           </div>
           <p class="msg" id="pj-upload-msg"></p>

@@ -7,6 +7,7 @@ const BUCKET = "resume";
 const IMAGE_TYPES = { "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp", "image/gif": "gif" };
 const FILE_TYPES = Object.assign({ "application/pdf": "pdf" }, IMAGE_TYPES);
 const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_DETAIL = 10; // 자세히 보기 사진은 10장까지
 
 // 짧게 쓰려고 만든 도우미
 function $(id) {
@@ -413,8 +414,8 @@ function renderFileName() {
 
 function openProjectForm(p) {
   editing = p
-    ? { id: p.id, thumbnail_url: p.thumbnail_url, file_url: p.file_url }
-    : { id: null, thumbnail_url: null, file_url: null };
+    ? { id: p.id, thumbnail_url: p.thumbnail_url, file_url: p.file_url, detail_images: (p.detail_images || []).slice() }
+    : { id: null, thumbnail_url: null, file_url: null, detail_images: [] };
   $("project-form-title").textContent = p ? "카드 수정" : "카드 추가";
   $("pj-number").value = p ? p.number : "";
   $("pj-category").value = p ? p.category : "";
@@ -423,8 +424,10 @@ function openProjectForm(p) {
   $("pj-tags").value = p ? (p.tags || []).join(", ") : "";
   $("pj-thumb-file").value = "";
   $("pj-file-file").value = "";
+  $("pj-detail-file").value = "";
   setPreview("pj-thumb-preview", editing.thumbnail_url);
   renderFileName();
+  renderDetailImages();
   showMsg("pj-upload-msg", "");
   showMsg("project-msg", "");
   $("project-form").classList.remove("hidden");
@@ -461,6 +464,90 @@ async function onProjectFilePicked(inputId, allowed, key) {
   input.value = "";
 }
 
+// ----- 자세히 보기 사진 (여러 장) -----
+function renderDetailImages() {
+  const list = $("pj-detail-list");
+  list.innerHTML = "";
+  const images = editing.detail_images;
+  images.forEach(function (url, i) {
+    const li = el("li");
+    const box = el("div", "preview");
+    box.id = "pj-detail-" + i;
+    li.appendChild(box);
+    li.appendChild(el("span", "num", String(i + 1)));
+
+    const btns = el("div", "buttons");
+    const left = button("◀", "", function () { moveDetailImage(i, -1); });
+    const right = button("▶", "", function () { moveDetailImage(i, 1); });
+    left.disabled = i === 0;
+    right.disabled = i === images.length - 1;
+    left.setAttribute("aria-label", (i + 1) + "번 사진 앞으로");
+    right.setAttribute("aria-label", (i + 1) + "번 사진 뒤로");
+    const remove = button("빼기", "danger", function () { removeDetailImage(i); });
+    btns.append(left, right, remove);
+    li.appendChild(btns);
+    list.appendChild(li);
+    setPreview(box.id, url);
+  });
+}
+
+function moveDetailImage(i, step) {
+  const images = editing.detail_images;
+  const j = i + step;
+  if (j < 0 || j >= images.length) return;
+  const tmp = images[i];
+  images[i] = images[j];
+  images[j] = tmp;
+  renderDetailImages();
+}
+
+function removeDetailImage(i) {
+  if (!confirm((i + 1) + "번 사진을 뺄까요? ('카드 저장'을 눌러야 반영돼요)")) return;
+  editing.detail_images.splice(i, 1);
+  renderDetailImages();
+}
+
+async function onDetailImagesPicked() {
+  const input = $("pj-detail-file");
+  const files = Array.prototype.slice.call(input.files);
+  input.value = "";
+  if (!files.length || !editing) return;
+
+  const room = MAX_DETAIL - editing.detail_images.length;
+  if (room <= 0) {
+    showMsg("pj-upload-msg", "자세히 보기 사진은 " + MAX_DETAIL + "장까지 넣을 수 있어요.", true);
+    return;
+  }
+
+  const problems = [];
+  const ok = [];
+  files.forEach(function (f) {
+    const problem = checkFile(f, IMAGE_TYPES);
+    if (problem) problems.push(f.name + ": " + problem);
+    else ok.push(f);
+  });
+  if (ok.length > room) {
+    problems.push(MAX_DETAIL + "장까지라서 " + (ok.length - room) + "장은 빼고 올렸어요.");
+    ok.length = room;
+  }
+
+  let done = 0;
+  for (const f of ok) {
+    showMsg("pj-upload-msg", "올리는 중… (" + (done + 1) + " / " + ok.length + ")");
+    try {
+      const url = await uploadFile("projects", f, IMAGE_TYPES);
+      editing.detail_images.push(url);
+      done++;
+      renderDetailImages();
+    } catch (e) {
+      problems.push(f.name + ": 올리지 못했어요. " + errorText(e));
+    }
+  }
+
+  const head = done ? done + "장을 올렸어요. '카드 저장'을 눌러야 카드에 반영돼요." : "";
+  showMsg("pj-upload-msg", [head].concat(problems).filter(Boolean).join(" / "), problems.length > 0);
+}
+
 async function saveProject() {
   const title = $("pj-title").value.trim();
   if (!title) {
@@ -476,6 +563,7 @@ async function saveProject() {
     tags: $("pj-tags").value.split(",").map(function (t) { return t.trim(); }).filter(Boolean),
     thumbnail_url: editing.thumbnail_url,
     file_url: editing.file_url,
+    detail_images: editing.detail_images,
   };
 
   const btn = $("project-save");
@@ -495,7 +583,11 @@ async function saveProject() {
     showMsg("project-list-msg", "카드를 저장했어요.");
     await loadProjects();
   } catch (e) {
-    showMsg("project-msg", "저장하지 못했어요. " + errorText(e), true);
+    // 400 = 표에 detail_images 칸이 아직 없을 때
+    const hint = /400/.test(String(e && e.message))
+      ? "Supabase SQL Editor에서 resume.sql의 9번(자세히 보기 사진 칸)을 실행했는지 확인해 주세요."
+      : errorText(e);
+    showMsg("project-msg", "저장하지 못했어요. " + hint, true);
   }
   btn.disabled = false;
 }
@@ -651,6 +743,7 @@ $("pj-thumb-file").addEventListener("change", function () {
 $("pj-file-file").addEventListener("change", function () {
   onProjectFilePicked("pj-file-file", FILE_TYPES, "file_url");
 });
+$("pj-detail-file").addEventListener("change", onDetailImagesPicked);
 $("pj-thumb-remove").addEventListener("click", function () {
   if (!editing || !editing.thumbnail_url) return;
   if (!confirm("썸네일을 뺄까요? ('카드 저장'을 눌러야 반영돼요)")) return;

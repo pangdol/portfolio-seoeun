@@ -316,19 +316,47 @@ function isImageUrl(url) {
   return /\.(png|jpe?g|webp|gif)(\?|$)/i.test(url || "");
 }
 
-function openProjectDialog(project) {
-  // 사진: 썸네일, 없으면 첨부 파일이 이미지일 때 그 이미지
-  const photoUrl = project.thumbnail_url || (isImageUrl(project.file_url) ? project.file_url : null);
+let dialogPhotos = [];
+let dialogIndex = 0;
+let dialogTitle = "";
+
+// 지금 순서의 사진 한 장을 보여 준다
+function showDialogPhoto() {
   const photo = $("dlg-photo");
   photo.innerHTML = "";
-  photo.classList.toggle("empty", !photoUrl);
-  if (photoUrl) {
+  const url = dialogPhotos[dialogIndex];
+  photo.classList.toggle("empty", !url);
+  if (url) {
     const img = el("img");
-    img.src = photoUrl;
-    img.alt = project.title;
+    img.src = url;
+    img.alt = dialogTitle + (dialogPhotos.length > 1 ? " 사진 " + (dialogIndex + 1) : "");
     img.onerror = function () { img.remove(); photo.classList.add("empty"); };
     photo.appendChild(img);
   }
+  const many = dialogPhotos.length > 1;
+  $("dlg-prev").hidden = !many;
+  $("dlg-next").hidden = !many;
+  $("dlg-count").hidden = !many;
+  $("dlg-count").textContent = many ? (dialogIndex + 1) + " / " + dialogPhotos.length : "";
+}
+
+// 앞(-1)·뒤(+1)로 넘기기. 끝에서 넘기면 처음으로 돌아간다
+function stepDialogPhoto(step) {
+  if (dialogPhotos.length < 2) return;
+  dialogIndex = (dialogIndex + step + dialogPhotos.length) % dialogPhotos.length;
+  showDialogPhoto();
+}
+
+function openProjectDialog(project) {
+  // 사진: 관리자가 고른 자세히 보기 사진들.
+  // 없으면 썸네일, 그것도 없으면 첨부 파일이 이미지일 때 그 이미지
+  const chosen = (project.detail_images || []).filter(Boolean);
+  const fallback = project.thumbnail_url || (isImageUrl(project.file_url) ? project.file_url : null);
+  dialogPhotos = chosen.length ? chosen : (fallback ? [fallback] : []);
+  dialogIndex = 0;
+  dialogTitle = project.title;
+  showDialogPhoto();
+  const photoUrl = dialogPhotos[0];
 
   $("dlg-meta").textContent = [project.number, project.category].filter(Boolean).join(" · ");
   $("dlg-title").textContent = project.title;
@@ -369,6 +397,26 @@ dialog.addEventListener("click", function (e) {
 });
 
 $("dlg-close").addEventListener("click", closeProjectDialog);
+$("dlg-prev").addEventListener("click", function () { stepDialogPhoto(-1); });
+$("dlg-next").addEventListener("click", function () { stepDialogPhoto(1); });
+
+// 키보드 ← → 로 넘기기
+dialog.addEventListener("keydown", function (e) {
+  if (e.key === "ArrowLeft") stepDialogPhoto(-1);
+  if (e.key === "ArrowRight") stepDialogPhoto(1);
+});
+
+// 휴대폰: 사진을 옆으로 밀어서 넘기기
+let touchStartX = null;
+$("dlg-photo").addEventListener("touchstart", function (e) {
+  touchStartX = e.touches[0].clientX;
+}, { passive: true });
+$("dlg-photo").addEventListener("touchend", function (e) {
+  if (touchStartX === null) return;
+  const dx = e.changedTouches[0].clientX - touchStartX;
+  touchStartX = null;
+  if (Math.abs(dx) > 40) stepDialogPhoto(dx < 0 ? 1 : -1);
+});
 $("dlg-done").addEventListener("click", closeProjectDialog);
 $("dlg-file").addEventListener("click", function () {
   if (dialogFileUrl) window.open(dialogFileUrl, "_blank", "noopener");
